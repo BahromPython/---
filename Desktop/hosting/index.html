@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="tj">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гапу-чап</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bad+Script:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-size: cover;
+            background-attachment: fixed;
+            font-family: 'Bad Script', cursive;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .header {
+            background-color: #d4af37;
+            border-bottom: 3px solid #a52a2a;
+        }
+        .nav-button {
+            background-color: #2e8b57;
+            color: white;
+        }
+        .nav-button:hover {
+            background-color: #a52a2a;
+        }
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #a52a2a;
+        }
+        .small-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #d4af37;
+        }
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        .post-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
+        .post-grid img, .post-grid video {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+        .logo {
+            width: 50px;
+            height: 50px;
+        }
+        .card {
+            background: linear-gradient(135deg, #f5f5dc, #fffacd);
+            border: 2px solid #d4af37;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .button {
+            background-color: #a52a2a;
+            border: 2px solid #d4af37;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #2e8b57;
+        }
+        .follow-button {
+            background-color: #2e8b57;
+            color: white;
+        }
+        .follow-button.followed {
+            background-color: #a52a2a;
+        }
+        .follow-button:hover {
+            background-color: #d4af37;
+        }
+        .icon {
+            width: 24px;
+            height: 24px;
+        }
+        .small-icon {
+            width: 16px;
+            height: 16px;
+        }
+        .tiktok-feed {
+            height: 100vh;
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+        .tiktok-post {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            scroll-snap-align: start;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .tiktok-post img, .tiktok-post video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .tiktok-actions {
+            position: absolute;
+            right: 10px;
+            bottom: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .tiktok-info {
+            position: absolute;
+            bottom: 60px;
+            left: 20px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        /* Анимации для лайка */
+        .like-button {
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .like-button.liked {
+            transform: scale(1.2);
+        }
+        .like-button.liked svg {
+            fill: #ff0000;
+        }
+        .like-heart {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            color: #ff0000;
+            opacity: 0;
+        }
+        .like-heart.animate {
+            animation: heartPop 0.6s ease-out forwards;
+        }
+        @keyframes heartPop {
+            0% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(-20px) scale(1.5);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-40px) scale(1.5);
+            }
+        }
+        /* Анимации для комментариев */
+        .comment-button {
+            transition: transform 0.2s;
+        }
+        .comment-button:hover {
+            transform: scale(1.1);
+        }
+        .comment-button:active {
+            transform: scale(0.9);
+        }
+        .comment-panel {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 70%;
+            width: 100%;
+            background: linear-gradient(180deg, #ffffff, #f5f5dc);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            z-index: 20;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .comment-panel.show {
+            transform: translateY(0);
+        }
+        .comment-header {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #d4af37;
+            color: #a52a2a;
+            z-index: 10;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+        .comment-list {
+            padding: 20px;
+        }
+        .comment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 16px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .comment-content {
+            flex: 1;
+            margin-left: 12px;
+        }
+        .comment-username {
+            font-weight: bold;
+            color: #a52a2a;
+        }
+        .comment-text {
+            color: #333;
+            margin-top: 4px;
+        }
+        .comment-meta {
+            color: #666;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+        .comment-likes {
+            display: flex;
+            align-items: center;
+            color: #a52a2a;
+        }
+        .comment-input-container {
+            position: sticky;
+            bottom: 0;
+            background: #ffffff;
+            padding: 16px;
+            border-top: 1px solid #d4af37;
+            display: flex;
+            align-items: center;
+        }
+        .comment-input {
+            flex: 1;
+            padding: 10px 16px;
+            border-radius: 20px;
+            background: #f5f5dc;
+            color: #333;
+            border: 1px solid #d4af37;
+            outline: none;
+            margin-right: 8px;
+        }
+        .comment-send-button {
+            background: #d4af37;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .comment-send-button:hover {
+            background: #a52a2a;
+        }
+    </style>
+</head>
+<body>
+    <div id="root" class="pb-16"></div>
+    <audio id="background-music" src={ASSETS.MUSIC} loop></audio>
+
+    <script type="text/babel">
+        const API_BASE_URL = 'http://127.0.0.1:5000';
+
+        const ASSETS = {
+            BACKGROUND_PATTERN: 'tajik-pattern.jpg',
+            FRAME: '/static/tajik-frame.png',
+            DIVIDER: '/static/tajik-divider.png',
+            LOGO: 'logo.png',
+            MUSIC: '/static/tajik-music.mp3',
+            DEFAULT_AVATAR: 'default-avatar.png',
+            DEFAULT_POST_1: 'tajik-divider.jpg',
+            DEFAULT_POST_2: '/static/tajik-market.jpg',
+            DEFAULT_POST_3: '/static/tajik-clothing.jpg'
+        };
+
+        const { useState, useEffect } = React;
+
+        async function apiCall(method, endpoint, data, token, isFormData = false) {
+            console.log(`Making ${method} request to ${endpoint} with token: ${token}`);
+            try {
+                const config = {
+                    method,
+                    url: `${API_BASE_URL}${endpoint}`,
+                    headers: {
+                        ...(token && { 'Authorization': `Bearer ${token}` }),
+                        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+                    },
+                    ...(data && (isFormData ? { data } : { data: JSON.stringify(data) })),
+                };
+                const response = await axios(config);
+                console.log(`Response from ${endpoint}:`, response.data);
+                return response.data;
+            } catch (error) {
+                console.log(`Full error response for ${method} ${endpoint}:`, error.response);
+                const msg = error.response?.data?.msg || error.message;
+                console.log(`Error in ${method} ${endpoint}: ${msg}`);
+                throw msg;
+            }
+        }
+
+        function App() {
+            const [view, setView] = useState('login');
+            const [token, setToken] = useState(localStorage.getItem('token'));
+            const [posts, setPosts] = useState([]);
+            const [followers, setFollowers] = useState([]);
+            const [following, setFollowing] = useState([]);
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+            const [currentUser, setCurrentUser] = useState(null);
+            const [mediaFile, setMediaFile] = useState(null);
+            const [mediaPreview, setMediaPreview] = useState(null);
+            const [mediaType, setMediaType] = useState(null);
+            const [caption, setCaption] = useState('');
+            const [error, setError] = useState('');
+            const [activeTab, setActiveTab] = useState('posts');
+            const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+
+            const defaultPosts = [
+                { id: 'default1', image_path: ASSETS.DEFAULT_POST_1, caption: 'Горы Памира', username: 'Гапу-чап', created_at: new Date().toISOString(), like_count: 0, comment_count: 0, liked_by_user: false, is_following: false },
+                { id: 'default2', image_path: ASSETS.DEFAULT_POST_2, caption: 'Базар в Душанбе', username: 'Гапу-чап', created_at: new Date().toISOString(), like_count: 0, comment_count: 0, liked_by_user: false, is_following: false },
+                { id: 'default3', image_path: ASSETS.DEFAULT_POST_3, caption: 'Традиционная одежда', username: 'Гапу-чап', created_at: new Date().toISOString(), like_count: 0, comment_count: 0, liked_by_user: false, is_following: false }
+            ];
+
+            const fetchPosts = async (tokenToUse) => {
+                let isMounted = true;
+                if (!tokenToUse) {
+                    if (isMounted) setPosts(defaultPosts);
+                    return;
+                }
+                try {
+                    const fetchedPosts = await apiCall('GET', '/posts', null, tokenToUse);
+                    if (isMounted) {
+                        if (fetchedPosts.length === 0) {
+                            setPosts(defaultPosts);
+                        } else {
+                            setPosts(fetchedPosts);
+                        }
+                    }
+                } catch (err) {
+                    const errorMessage = String(err);
+                    if (isMounted) setError(errorMessage);
+                    if (errorMessage.includes('Invalid token') || errorMessage.includes('Subject must be a string') || errorMessage.includes('Token has expired') || errorMessage.includes('Signature verification failed')) {
+                        localStorage.removeItem('token');
+                        if (isMounted) {
+                            setToken(null);
+                            setView('login');
+                        }
+                    }
+                }
+                return () => { isMounted = false; };
+            };
+
+            const fetchFollowers = async (tokenToUse) => {
+                let isMounted = true;
+                if (!tokenToUse) return;
+                try {
+                    const fetchedFollowers = await apiCall('GET', '/followers', null, tokenToUse);
+                    if (isMounted) setFollowers(fetchedFollowers);
+                } catch (err) {
+                    const errorMessage = String(err);
+                    if (isMounted) setError(errorMessage);
+                    if (errorMessage.includes('Invalid token') || errorMessage.includes('Subject must be a string') || errorMessage.includes('Token has expired') || errorMessage.includes('Signature verification failed')) {
+                        localStorage.removeItem('token');
+                        if (isMounted) {
+                            setToken(null);
+                            setView('login');
+                        }
+                    }
+                }
+                return () => { isMounted = false; };
+            };
+
+            const fetchFollowing = async (tokenToUse) => {
+                let isMounted = true;
+                if (!tokenToUse) return;
+                try {
+                    const fetchedFollowing = await apiCall('GET', '/following', null, tokenToUse);
+                    if (isMounted) setFollowing(fetchedFollowing);
+                } catch (err) {
+                    const errorMessage = String(err);
+                    if (isMounted) setError(errorMessage);
+                    if (errorMessage.includes('Invalid token') || errorMessage.includes('Subject must be a string') || errorMessage.includes('Token has expired') || errorMessage.includes('Signature verification failed')) {
+                        localStorage.removeItem('token');
+                        if (isMounted) {
+                            setToken(null);
+                            setView('login');
+                        }
+                    }
+                }
+                return () => { isMounted = false; };
+            };
+
+            const fetchCurrentUser = async (tokenToUse) => {
+                let isMounted = true;
+                if (!tokenToUse) return;
+                try {
+                    const response = await apiCall('GET', '/verify-token', null, tokenToUse);
+                    const userId = response.message.split(' ').pop();
+                    const loginResponse = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+                    if (isMounted) {
+                        setCurrentUser({
+                            id: userId,
+                            username: loginResponse.username || 'User'
+                        });
+                    }
+                } catch (err) {
+                    const errorMessage = String(err);
+                    if (isMounted) setError(errorMessage);
+                    if (errorMessage.includes('Invalid token') || errorMessage.includes('Subject must be a string') || errorMessage.includes('Token has expired') || errorMessage.includes('Signature verification failed')) {
+                        localStorage.removeItem('token');
+                        if (isMounted) {
+                            setToken(null);
+                            setView('login');
+                        }
+                    }
+                }
+                return () => { isMounted = false; };
+            };
+
+            useEffect(() => {
+                let isMounted = true;
+                if (token) {
+                    if (isMounted) setView('home');
+                    fetchPosts(token);
+                    fetchFollowers(token);
+                    fetchFollowing(token);
+                    fetchCurrentUser(token);
+                } else {
+                    if (isMounted) setPosts(defaultPosts);
+                }
+                return () => {
+                    isMounted = false;
+                };
+            }, [token]);
+
+            const handleRegister = async (e) => {
+                e.preventDefault();
+                try {
+                    await apiCall('POST', '/register', { username, password }, null);
+                    setError('');
+                    setView('login');
+                } catch (err) {
+                    setError(String(err));
+                }
+            };
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                try {
+                    const response = await apiCall('POST', '/login', { username, password }, null);
+                    const newToken = response.access_token;
+                    localStorage.setItem('token', newToken);
+                    localStorage.setItem('loginResponse', JSON.stringify(response));
+                    setToken(newToken);
+                    setError('');
+                    console.log('Login successful, token:', newToken);
+                } catch (err) {
+                    setError(String(err));
+                }
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('loginResponse');
+                setToken(null);
+                setView('login');
+                setPosts(defaultPosts);
+                setFollowers([]);
+                setFollowing([]);
+                setCurrentUser(null);
+                setIsMusicPlaying(false);
+                document.getElementById('background-music').pause();
+            };
+
+            const handleMediaChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setMediaFile(file);
+                    setMediaType(file.type.startsWith('video/') ? 'video' : 'image');
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setMediaPreview(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleCreatePost = async (e) => {
+                e.preventDefault();
+                if (!mediaFile) {
+                    setError('Please select a media file to upload');
+                    return;
+                }
+                try {
+                    const formData = new FormData();
+                    formData.append('media', mediaFile);
+                    formData.append('caption', caption);
+                    await apiCall('POST', '/posts', formData, token, true);
+                    const updatedPosts = await apiCall('GET', '/posts', null, token);
+                    setPosts(updatedPosts.length === 0 ? defaultPosts : updatedPosts);
+                    setMediaFile(null);
+                    setMediaPreview(null);
+                    setMediaType(null);
+                    setCaption('');
+                    setError('');
+                } catch (err) {
+                    const errorMessage = String(err);
+                    setError(errorMessage);
+                    if (errorMessage.includes('Invalid token') || errorMessage.includes('Subject must be a string') || errorMessage.includes('Token has expired') || errorMessage.includes('Signature verification failed')) {
+                        localStorage.removeItem('token');
+                        setToken(null);
+                        setView('login');
+                    }
+                }
+            };
+
+            const handleLike = async (postId) => {
+                if (String(postId).startsWith('default')) return;
+                try {
+                    await apiCall('POST', `/posts/${postId}/like`, null, token);
+                    const updatedPosts = await apiCall('GET', '/posts', null, token);
+                    setPosts(updatedPosts.length === 0 ? defaultPosts : updatedPosts);
+                } catch (err) {
+                    const errorMessage = String(err);
+                    setError(errorMessage);
+                    if (errorMessage.includes('Invalid token') || errorMessage.includes('Subject must be a string') || errorMessage.includes('Token has expired') || errorMessage.includes('Signature verification failed')) {
+                        localStorage.removeItem('token');
+                        setToken(null);
+                        setView('login');
+                    }
+                }
+            };
+
+            const handleComment = async (postId, commentText) => {
+                if (String(postId).startsWith('default')) return false;
+                try {
+                    await apiCall('POST', `/posts/${postId}/comment`, { comment: commentText }, token);
+                    return true;
+                } catch (err) {
+                    const errorMessage = String(err);
+                    setError(errorMessage);
+                    if (errorMessage.includes('Invalid token') || errorMessage.includes('Subject must be a string') || errorMessage.includes('Token has expired') || errorMessage.includes('Signature verification failed')) {
+                        localStorage.removeItem('token');
+                        setToken(null);
+                        setView('login');
+                    }
+                    return false;
+                }
+            };
+
+            const handleFollow = async (usernameToFollow) => {
+                try {
+                    await apiCall('POST', `/follow/${usernameToFollow}`, null, token);
+                    fetchFollowing(token);
+                    fetchFollowers(token);
+                    const updatedPosts = await apiCall('GET', '/posts', null, token);
+                    setPosts(updatedPosts.length === 0 ? defaultPosts : updatedPosts);
+                } catch (err) {
+                    setError(String(err));
+                }
+            };
+
+            const handleUnfollow = async (usernameToUnfollow) => {
+                try {
+                    await apiCall('POST', `/unfollow/${usernameToUnfollow}`, null, token);
+                    fetchFollowing(token);
+                    fetchFollowers(token);
+                    const updatedPosts = await apiCall('GET', '/posts', null, token);
+                    setPosts(updatedPosts.length === 0 ? defaultPosts : updatedPosts);
+                } catch (err) {
+                    setError(String(err));
+                }
+            };
+
+            const toggleMusic = () => {
+                const audio = document.getElementById('background-music');
+                if (isMusicPlaying) {
+                    audio.pause();
+                    setIsMusicPlaying(false);
+                } else {
+                    audio.play();
+                    setIsMusicPlaying(true);
+                }
+            };
+
+            return (
+                <div>
+                    {(view === 'home' || view === 'feed') && (
+                        <header className="header fixed top-0 left-0 right-0 p-4 flex justify-between items-center z-10" style={{ backgroundImage: `url(${ASSETS.FRAME})`, backgroundSize: '100% 100%', padding: '20px' }}>
+                            <div className="flex items-center">
+                                <img src={ASSETS.LOGO} alt="Гапу-чап Logo" className="logo mr-2" />
+                                <h1 className="text-2xl font-bold text-white">Гапу-чап</h1>
+                            </div>
+                            <div className="flex space-x-4">
+                                <button onClick={toggleMusic} className="text-white">
+                                    <svg className="icon" viewBox="0 0 24 24" fill="white">
+                                        <path d="M12 3v10.55A4 4 0 0 0 10 17a4 4 0 0 0 4 4 4 4 0 0 0 4-4V7h4V3h-10z"/>
+                                    </svg>
+                                </button>
+                                <button className="text-white">
+                                    <svg className="icon" viewBox="0 0 24 24" fill="white">
+                                        <path d="M10 16.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zm0-2a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm5-5a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-10 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                                    </svg>
+                                </button>
+                                <button className="text-white">
+                                    <svg className="icon" viewBox="0 0 24 24" fill="white">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                    </svg>
+                                </button>
+                                <button onClick={handleLogout} className="text-white">
+                                    <svg className="icon" viewBox="0 0 24 24" fill="white">
+                                        <path d="M10 9V5l-7 7 7 7v-4h11v-6H10zm-8 3l5-5v2h9v2H7v2l-5-5z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </header>
+                    )}
+                    <div className="pt-16">
+                        {error && <div className="bg-red-500 text-white p-2 mb-4 rounded">{error}</div>}
+                        {view === 'login' && (
+                            <div className="max-w-md mx-auto bg-white p-6 rounded shadow card" style={{ backgroundImage: `url(${ASSETS.FRAME})`, backgroundSize: '100% 100%', padding: '20px' }}>
+                                <h2 className="text-2xl mb-4 text-center text-[#a52a2a]">Воридшавӣ</h2>
+                                <form onSubmit={handleLogin}>
+                                    <input
+                                        type="text"
+                                        placeholder="Номи корбар"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="w-full p-2 mb-4 border rounded"
+                                    />
+                                    <input
+                                        type="password"
+                                        placeholder="Рамз"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full p-2 mb-4 border rounded"
+                                    />
+                                    <button type="submit" className="w-full button text-white p-2 rounded">
+                                        Ворид шавед
+                                    </button>
+                                </form>
+                                <button
+                                    onClick={() => setView('register')}
+                                    className="w-full mt-2 text-[#a52a2a] underline"
+                                >
+                                    Сабти ном
+                                </button>
+                            </div>
+                        )}
+                        {view === 'register' && (
+                            <div className="max-w-md mx-auto bg-white p-6 rounded shadow card" style={{ backgroundImage: `url(${ASSETS.FRAME})`, backgroundSize: '100% 100%', padding: '20px' }}>
+                                <h2 className="text-2xl mb-4 text-center text-[#a52a2a]">Сабти ном</h2>
+                                <form onSubmit={handleRegister}>
+                                    <input
+                                        type="text"
+                                        placeholder="Номи корбар"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="w-full p-2 mb-4 border rounded"
+                                    />
+                                    <input
+                                        type="password"
+                                        placeholder="Рамз"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full p-2 mb-4 border rounded"
+                                    />
+                                    <button type="submit" className="w-full button text-white p-2 rounded">
+                                        Сабти ном
+                                    </button>
+                                </form>
+                                <button
+                                    onClick={() => setView('login')}
+                                    className="w-full mt-2 text-[#a52a2a] underline"
+                                >
+                                    Бозгашт ба Воридшавī
+                                </button>
+                            </div>
+                        )}
+                        {view === 'home' && currentUser && (
+                            <div className="container mx-auto p-4">
+                                <div className="flex items-center mb-6 card p-4" style={{ backgroundImage: `url(${ASSETS.FRAME})`, backgroundSize: '100% 100%', padding: '20px' }}>
+                                    <img
+                                        src={ASSETS.DEFAULT_AVATAR}
+                                        alt="Avatar"
+                                        className="avatar mr-4"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="flex justify-between mb-2">
+                                            <div className="text-center">
+                                                <p className="font-bold text-[#a52a2a]">{posts.filter(post => !String(post.id).startsWith('default')).length}</p>
+                                                <p>Паёмҳо</p>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="font-bold text-[#a52a2a]">{followers.length}</p>
+                                                <p>Пайравон</p>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="font-bold text-[#a52a2a]">{following.length}</p>
+                                                <p>Пайгириҳо</p>
+                                            </div>
+                                        </div>
+                                        <p className="font-bold text-[#a52a2a]">{currentUser.username}</p>
+                                        <p>Гапу-чап User</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-around border-b border-[#d4af37] mb-4">
+                                    <button
+                                        onClick={() => setActiveTab('posts')}
+                                        className={`p-2 flex items-center ${activeTab === 'posts' ? 'border-b-2 border-[#a52a2a] text-[#a52a2a]' : 'text-gray-500'}`}
+                                    >
+                                        <svg className="icon mr-1" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-1 14H5V6h14v12zm-9-6l4 4h-8l2-2 1-1 1 1 2-2z"/>
+                                        </svg>
+                                        Паёмҳо
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('followers')}
+                                        className={`p-2 flex items-center ${activeTab === 'followers' ? 'border-b-2 border-[#a52a2a] text-[#a52a2a]' : 'text-gray-500'}`}
+                                    >
+                                        <svg className="icon mr-1" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zm-4-2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm0 8c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm-6 4c.22-.72 3.31-2 6-2s5.78 1.28 6 2H6z"/>
+                                        </svg>
+                                        Пайравон
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('following')}
+                                        className={`p-2 flex items-center ${activeTab === 'following' ? 'border-b-2 border-[#a52a2a] text-[#a52a2a]' : 'text-gray-500'}`}
+                                    >
+                                        <svg className="icon mr-1" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zm-4-2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm0 8c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4zm-6 4c.22-.72 3.31-2 6-2s5.78 1.28 6 2H6z"/>
+                                        </svg>
+                                        Пайгириҳо
+                                    </button>
+                                </div>
+                                <div style={{ backgroundImage: `url(${ASSETS.DIVIDER})`, backgroundSize: 'cover', height: '10px', margin: '10px 0' }}></div>
+
+                                {activeTab === 'posts' && (
+                                    <div>
+                                        <div className="mb-6 card p-4" style={{ backgroundImage: `url(${ASSETS.FRAME})`, backgroundSize: '100% 100%', padding: '20px' }}>
+                                            <h2 className="text-xl mb-2 text-[#a52a2a]">Эҷоди Паём</h2>
+                                            <form onSubmit={handleCreatePost}>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,video/*"
+                                                    onChange={handleMediaChange}
+                                                    className="mb-4"
+                                                />
+                                                {mediaPreview && mediaType === 'image' && (
+                                                    <img src={mediaPreview} alt="Preview" className="w-32 h-32 object-cover mb-4" />
+                                                )}
+                                                {mediaPreview && mediaType === 'video' && (
+                                                    <video controls src={mediaPreview} className="w-32 h-32 object-cover mb-4" />
+                                                )}
+                                                <textarea
+                                                    placeholder="Тавсиф"
+                                                    value={caption}
+                                                    onChange={(e) => setCaption(e.target.value)}
+                                                    className="w-full p-2 mb-4 border rounded"
+                                                />
+                                                <button type="submit" className="button text-white p-2 rounded">
+                                                    Нашр
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <div className="post-grid">
+                                            {posts.length === 0 ? (
+                                                <p className="text-[#a52a2a] col-span-3 text-center">Ҳеҷ паём нест.</p>
+                                            ) : (
+                                                posts.map(post => (
+                                                    <div key={post.id}>
+                                                        {String(post.id).startsWith('default') || post.image_path.endsWith('.mp4') || post.image_path.endsWith('.webm') || post.image_path.endsWith('.ogg') ? (
+                                                            <video src={`${String(post.id).startsWith('default') ? post.image_path : API_BASE_URL + post.image_path}`} />
+                                                        ) : (
+                                                            <img src={`${String(post.id).startsWith('default') ? post.image_path : API_BASE_URL + post.image_path}`} alt="Post" />
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {activeTab === 'followers' && (
+                                    <div className="mb-6 card p-4" style={{ backgroundImage: `url(${ASSETS.FRAME})`, backgroundSize: '100% 100%', padding: '20px' }}>
+                                        <h2 className="text-xl mb-2 text-[#a52a2a]">Пайравон ({followers.length})</h2>
+                                        {followers.length === 0 ? (
+                                            <p>Ҳеҷ пайравон нест.</p>
+                                        ) : (
+                                            <ul>
+                                                {followers.map((follower, index) => (
+                                                    <li key={index} className="mb-1 flex items-center">
+                                                        <img src={ASSETS.DEFAULT_AVATAR} alt="Avatar" className="small-avatar mr-2" />
+                                                        <span>{follower.username}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                )}
+                                {activeTab === 'following' && (
+                                    <div className="mb-6 card p-4" style={{ backgroundImage: `url(${ASSETS.FRAME})`, backgroundSize: '100% 100%', padding: '20px' }}>
+                                        <h2 className="text-xl mb-2 text-[#a52a2a]">Пайгириҳо ({following.length})</h2>
+                                        {following.length === 0 ? (
+                                            <p>Шумо ҳеҷ касро пайгирī намекунед.</p>
+                                        ) : (
+                                            <ul>
+                                                {following.map((user, index) => (
+                                                    <li key={index} className="mb-1 flex items-center justify-between">
+                                                        <div className="flex items-center">
+                                                            <img src={ASSETS.DEFAULT_AVATAR} alt="Avatar" className="small-avatar mr-2" />
+                                                            <span>{user.username}</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleUnfollow(user.username)}
+                                                            className="text-[#a52a2a] underline"
+                                                        >
+                                                            Бекор кардани пайгирī
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                        <div className="mt-4">
+                                            <input
+                                                type="text"
+                                                placeholder="Номи корбариро барои пайгирī ворид кунед"
+                                                value={username}
+                                                onChange={(e) => setUsername(e.target.value)}
+                                                className="w-full p-2 mb-4 border rounded"
+                                            />
+                                            <button
+                                                onClick={() => handleFollow(username)}
+                                                className="button text-white p-2 rounded"
+                                            >
+                                                Пайгирī
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {view === 'feed' && (
+                            <div className="tiktok-feed">
+                                {posts.length === 0 ? (
+                                    <p className="text-[#a52a2a] text-center mt-20">Ҳеҷ паём нест.</p>
+                                ) : (
+                                    posts.map(post => (
+                                        <TikTokPost
+                                            key={post.id}
+                                            post={post}
+                                            token={token}
+                                            onLike={handleLike}
+                                            onComment={handleComment}
+                                            onFollow={handleFollow}
+                                            onUnfollow={handleUnfollow}
+                                            currentUser={currentUser}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    {(view === 'home' || view === 'feed') && (
+                        <div className="fixed bottom-0 left-0 right-0 bg-[#d4af37] p-4 flex justify-around shadow-lg z-10">
+                            <button
+                                onClick={() => setView('feed')}
+                                className={`nav-button p-2 rounded ${view === 'feed' ? 'bg-[#a52a2a]' : ''}`}
+                            >
+                                <svg className="icon" viewBox="0 0 24 24" fill="white">
+                                    <path d="M2 2v20h20V2H2zm2 2h16v16H4V4zm2 2v12h12V6H6zm2 2h8v8H8V8z"/>
+                                </svg>
+                            </button>
+                            <button
+                                onClick={() => setView('home')}
+                                className={`nav-button p-2 rounded ${view === 'home' ? 'bg-[#a52a2a]' : ''}`}
+                            >
+                                <svg className="icon" viewBox="0 0 24 24" fill="white">
+                                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function TikTokPost({ post, token, onLike, onComment, onFollow, onUnfollow, currentUser }) {
+            const [comments, setComments] = useState([]);
+            const [newComment, setNewComment] = useState('');
+            const [showComments, setShowComments] = useState(false);
+            const [likeAnimation, setLikeAnimation] = useState(false);
+
+            const fetchComments = async () => {
+                if (String(post.id).startsWith('default')) return;
+                try {
+                    const fetchedComments = await apiCall('GET', `/posts/${post.id}/comments`, null, token);
+                    setComments(fetchedComments);
+                } catch (err) {
+                    console.error('Error fetching comments:', err);
+                }
+            };
+
+            useEffect(() => {
+                if (showComments) {
+                    fetchComments();
+                }
+            }, [showComments]);
+
+            const handleCommentSubmit = async (e) => {
+                e.preventDefault();
+                if (!newComment.trim()) return;
+                const success = await onComment(post.id, newComment);
+                if (success) {
+                    setNewComment('');
+                    fetchComments();
+                }
+            };
+
+            const handleLikeClick = async () => {
+                if (post.liked_by_user || String(post.id).startsWith('default')) return;
+                setLikeAnimation(true);
+                await onLike(post.id);
+            };
+
+            const isVideo = post.image_path.endsWith('.mp4') || post.image_path.endsWith('.webm') || post.image_path.endsWith('.ogg');
+
+            return (
+                <div className="tiktok-post">
+                    {isVideo ? (
+                        <video
+                            autoPlay
+                            loop
+                            controls
+                            src={`${String(post.id).startsWith('default') ? post.image_path : API_BASE_URL + post.image_path}`}
+                        />
+                    ) : (
+                        <img
+                            src={`${String(post.id).startsWith('default') ? post.image_path : API_BASE_URL + post.image_path}`}
+                            alt="Post"
+                        />
+                    )}
+                    <div className="tiktok-actions">
+                        {currentUser && post.username !== currentUser.username && (
+                            <button
+                                onClick={() => post.is_following ? onUnfollow(post.username) : onFollow(post.username)}
+                                className={`follow-button mb-2 p-2 rounded text-white ${post.is_following ? 'followed' : ''}`}
+                            >
+                                {post.is_following ? 'Бекор кардани пайгирī' : 'Пайгирī'}
+                            </button>
+                        )}
+                        <button
+                            onClick={handleLikeClick}
+                            disabled={post.liked_by_user || String(post.id).startsWith('default')}
+                            className={`like-button mb-2 p-2 rounded ${post.liked_by_user ? 'liked' : ''} ${
+                                post.liked_by_user || String(post.id).startsWith('default')
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-[#2e8b57] text-white'
+                            }`}
+                        >
+                            <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            </svg>
+                            <span>{post.like_count}</span>
+                            {likeAnimation && !post.liked_by_user && (
+                                <span className="like-heart animate">❤️</span>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setShowComments(!showComments)}
+                            disabled={String(post.id).startsWith('default')}
+                            className={`comment-button mb-2 p-2 rounded ${
+                                String(post.id).startsWith('default')
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-[#d4af37] text-white'
+                            }`}
+                        >
+                            <svg className="icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20 2H4c-1.1 0-2 .9-2 2v16l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 12H6l-2 2V4h16v10z"/>
+                            </svg>
+                            <span>{post.comment_count}</span>
+                        </button>
+                    </div>
+                    <div className="tiktok-info">
+                        <div className="flex items-center mb-2">
+                            <img src={ASSETS.DEFAULT_AVATAR} alt="Avatar" className="small-avatar mr-2" />
+                            <span className="font-bold">{post.username}</span>
+                        </div>
+                        <p>{post.caption}</p>
+                    </div>
+                    {showComments && !String(post.id).startsWith('default') && (
+                        <div className={`comment-panel ${showComments ? 'show' : ''}`}>
+                            <div className="comment-header">
+                                <span>Шарҳҳо: {post.comment_count}</span>
+                                <button onClick={() => setShowComments(false)}>
+                                    <svg className="small-icon" viewBox="0 0 24 24" fill="#a52a2a">
+                                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div className="comment-list">
+                                {comments.length === 0 ? (
+                                    <p className="text-[#a52a2a] text-center">Ҳеҷ шарҳ нест.</p>
+                                ) : (
+                                    comments.map((comment, index) => (
+                                        <div key={index} className="comment-item">
+                                            <img src={ASSETS.DEFAULT_AVATAR} alt="Avatar" className="comment-avatar" />
+                                            <div className="comment-content">
+                                                <div className="comment-username">{comment.username}</div>
+                                                <div className="comment-text">{comment.comment}</div>
+                                                <div className="comment-meta">
+                                                    {new Date(comment.created_at).toLocaleDateString()} {new Date(comment.created_at).toLocaleTimeString()}
+                                                </div>
+                                            </div>
+                                            <div className="comment-likes">
+                                                <svg className="small-icon mr-1" viewBox="0 0 24 24" fill="#a52a2a">
+                                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                                </svg>
+                                                <span>{Math.floor(Math.random() * 100)}</span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                            <div className="comment-input-container">
+                                <form onSubmit={handleCommentSubmit} className="flex items-center w-full">
+                                    <input
+                                        type="text"
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        placeholder="Шарҳ илова кунед..."
+                                        className="comment-input"
+                                    />
+                                    <button type="submit" className="comment-send-button">
+                                        <svg className="small-icon" viewBox="0 0 24 24" fill="white">
+                                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
